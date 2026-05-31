@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>温泉開発部の発掘作業！ Ver1.5</title>
+
+<style>
+body {
+  margin: 0;
+  background: #111827;
+  color: white;
+  font-family: sans-serif;
+  display: flex;
+  justify-content: center;
+  padding: 16px;
+}
+
+.game {
+  width: 560px;
+  background: #1f2937;
+  border-radius: 16px;
+  padding: 16px;
+}
+
+.screen { display: none; }
+.screen.active { display: block; }
+
+.title-screen,
+.character-select {
+  text-align: center;
+}
+
+.title-image {
+  width: 100%;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+
+h1 {
+  text-align: center;
+  margin: 0 0 10px;
+}
+
+.start-btn {
+  width: 100%;
+  background: #f97316;
+  color: white;
+  font-size: 20px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.character-select img {
+  width: 260px;
+  max-width: 100%;
+  margin: 10px 0;
+}
+
+.character-area {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.character-area img {
+  width: 220px;
+  max-width: 100%;
+}
+
+.status,
+.hint-table,
+.log {
+  background: #111827;
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+.status {
+  line-height: 1.6;
+}
+
+.bar-wrap {
+  background: #374151;
+  height: 18px;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 6px;
+}
+
+.bar {
+  height: 100%;
+  width: 0%;
+  background: #f97316;
+  transition: 0.3s;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.cell {
+  height: 78px;
+  background: #374151;
+  border: 2px solid #4b5563;
+  border-radius: 10px;
+  color: white;
+  cursor: pointer;
+  font-size: 11px;
+  padding: 4px;
+}
+
+.cell.selected {
+  border-color: #facc15;
+  box-shadow: 0 0 10px #facc15;
+}
+
+.cell.opened {
+  background: #111827;
+}
+
+.cell .num {
+  font-weight: bold;
+  color: #facc15;
+}
+
+.cell .memo {
+  font-size: 17px;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.dig { background: #f97316; color: white; }
+.search { background: #38bdf8; color: #082f49; }
+.memoBtn { background: #a78bfa; color: white; }
+
+.reset {
+  background: #e5e7eb;
+  color: #111827;
+  width: 100%;
+  margin-top: 10px;
+}
+
+.hint-table,
+.log {
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.hint-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+
+.hint-table th,
+.hint-table td {
+  border-bottom: 1px solid #374151;
+  padding: 6px;
+  text-align: left;
+}
+
+.hint-table th {
+  color: #facc15;
+}
+
+.result-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 1s ease;
+  z-index: 999;
+}
+
+.result-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.result-overlay img {
+  width: min(90vw, 540px);
+  border-radius: 16px;
+}
+</style>
+</head>
+
+<body>
+<div class="game">
+
+  <div id="titleScreen" class="screen active title-screen">
+    <img class="title-image" src="images/title_screen.png">
+    <button class="start-btn" onclick="showCharacterScreen()">ゲーム開始</button>
+  </div>
+
+  <div id="characterScreen" class="screen character-select">
+    <h1>♨ 温泉開発部の発掘作業！</h1>
+    <img src="images/kasumi-tuujyou1.png">
+    <p>
+      かすみと一緒に温泉を2か所掘り当てよう！<br>
+      調査でヒントを集めて、怪しいマスを掘削！<br>
+      騒ぎゲージが100になるとゲームオーバーです。
+    </p>
+    <button class="start-btn" onclick="startGame()">発掘開始</button>
+  </div>
+
+  <div id="gameScreen" class="screen">
+    <h1>♨ 温泉開発部の発掘作業！</h1>
+
+    <div class="character-area">
+      <img id="kasumiImg" src="images/kasumi-tuujyou1.png">
+    </div>
+
+    <div class="status">
+      ターン：<span id="turn">1</span><br>
+      騒ぎゲージ：<span id="noise">0</span> / 100<br>
+      発見温泉：<span id="onsenCount">0</span> / 2<br>
+      状態：<span id="alert">平常</span>
+      <div class="bar-wrap">
+        <div class="bar" id="bar"></div>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="controls">
+      <button class="dig" onclick="dig()">掘削</button>
+      <button class="search" onclick="investigate()">調査</button>
+      <button class="memoBtn" onclick="cycleMemo()">メモ変更</button>
+    </div>
+
+    <div class="hint-table">
+      <b>ヒント対応表</b>
+      <table>
+        <tr><th>種類</th><th>出るヒント</th></tr>
+        <tr><td>♨ 温泉</td><td>湯気 / 湿気</td></tr>
+        <tr><td>🪨 岩盤温泉</td><td>岩盤 / 湯気 / 湿気</td></tr>
+        <tr><td>💥 爆発岩</td><td>湯気 / 異臭 / 岩盤</td></tr>
+        <tr><td>👤 お邪魔キャラ</td><td>物音 / 異臭 / 湿気</td></tr>
+        <tr><td>💧 地下水</td><td>湿気 / 物音</td></tr>
+        <tr><td>🧰 道具箱</td><td>物音 / 岩盤</td></tr>
+        <tr><td>⬜ 空洞</td><td>静寂</td></tr>
+      </table>
+    </div>
+
+    <div class="log" id="log">
+      マスを選んで「調査」か「掘削」をしてください。
+    </div>
+
+    <button class="reset" onclick="startGame()">最初から</button>
+  </div>
+
+  <div id="resultOverlay" class="result-overlay" onclick="startGame()">
+    <img id="resultImage" src="">
+  </div>
+
+<script>
+const titleScreen = document.getElementById("titleScreen");
+const characterScreen = document.getElementById("characterScreen");
+const gameScreen = document.getElementById("gameScreen");
+
+const grid = document.getElementById("grid");
+const log = document.getElementById("log");
+const turnEl = document.getElementById("turn");
+const noiseEl = document.getElementById("noise");
+const barEl = document.getElementById("bar");
+const alertEl = document.getElementById("alert");
+const kasumiImg = document.getElementById("kasumiImg");
+const onsenCountEl = document.getElementById("onsenCount");
+const resultOverlay = document.getElementById("resultOverlay");
+const resultImage = document.getElementById("resultImage");
+
+let cells = [];
+let selected = null;
+let turn = 1;
+let noise = 0;
+let gameOver = false;
+let victory = false;
+
+let foundOnsen = 0;
+const clearTarget = 2;
+
+let kasumiFrame = false;
+let hintHappyTimer = 0;
+
+const memos = ["", "◎", "△", "×", "？"];
+
+const types = [
+  { type: "温泉", icon: "♨", hints: ["湯気", "湿気"], layers: ["温泉"] },
+  { type: "温泉", icon: "♨", hints: ["湯気", "湿気"], layers: ["温泉"] },
+
+  { type: "岩盤温泉", icon: "🪨", hints: ["岩盤", "湯気"], layers: ["岩盤", "岩盤", "温泉"] },
+  { type: "岩盤温泉", icon: "🪨", hints: ["岩盤", "湿気"], layers: ["岩盤", "岩盤", "温泉"] },
+  { type: "岩盤温泉", icon: "🪨", hints: ["岩盤", "湯気", "湿気"], layers: ["岩盤", "岩盤", "温泉"] },
+
+  { type: "爆発岩", icon: "💥", hints: ["湯気", "異臭", "岩盤"], layers: ["爆発"] },
+  { type: "爆発岩", icon: "💥", hints: ["湯気", "異臭"], layers: ["爆発"] },
+  { type: "爆発岩", icon: "💥", hints: ["岩盤", "異臭"], layers: ["爆発"] },
+  { type: "爆発岩", icon: "💥", hints: ["湯気", "岩盤"], layers: ["爆発"] },
+  { type: "爆発岩", icon: "💥", hints: ["異臭"], layers: ["爆発"] },
+
+  { type: "お邪魔キャラ", icon: "👤", hints: ["物音", "異臭"], layers: ["お邪魔"] },
+  { type: "お邪魔キャラ", icon: "👤", hints: ["物音"], layers: ["お邪魔"] },
+  { type: "お邪魔キャラ", icon: "👤", hints: ["物音", "湿気"], layers: ["お邪魔"] },
+  { type: "お邪魔キャラ", icon: "👤", hints: ["物音", "異臭"], layers: ["お邪魔"] },
+  { type: "お邪魔キャラ", icon: "👤", hints: ["物音", "岩盤"], layers: ["お邪魔"] },
+
+  { type: "地下水", icon: "💧", hints: ["湿気", "物音"], layers: ["地下水"] },
+  { type: "地下水", icon: "💧", hints: ["湿気"], layers: ["地下水"] },
+  { type: "地下水", icon: "💧", hints: ["湿気", "静寂"], layers: ["地下水"] },
+
+  { type: "道具箱", icon: "🧰", hints: ["物音"], layers: ["道具"] },
+  { type: "道具箱", icon: "🧰", hints: ["物音", "岩盤"], layers: ["道具"] },
+  { type: "道具箱", icon: "🧰", hints: ["静寂", "物音"], layers: ["道具"] },
+
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] },
+  { type: "空洞", icon: "⬜", hints: ["静寂"], layers: ["空洞"] }
+];
+
+function showScreen(screen) {
+  titleScreen.classList.remove("active");
+  characterScreen.classList.remove("active");
+  gameScreen.classList.remove("active");
+  screen.classList.add("active");
+}
+
+function showCharacterScreen() {
+  showScreen(characterScreen);
+}
+
+function showGameScreen() {
+  showScreen(gameScreen);
+}
+
+function shuffle(arr) {
+  return arr.sort(() => Math.random() - 0.5);
+}
+
+function showResultScreen(imagePath) {
+  resultImage.src = imagePath;
+  resultOverlay.classList.add("show");
+}
+
+function startGame() {
+  showGameScreen();
+
+  resultOverlay.classList.remove("show");
+  resultImage.src = "";
+
+  cells = shuffle(types.map((t, i) => ({
+    ...t,
+    id: i,
+    depth: 0,
+    opened: false,
+    memoIndex: 0,
+    knownHints: []
+  })));
+
+  selected = null;
+  turn = 1;
+  noise = 0;
+  gameOver = false;
+  victory = false;
+  foundOnsen = 0;
+  hintHappyTimer = 0;
+
+  log.innerHTML =
+    "マスを選んで「調査」か「掘削」をしてください。<br>" +
+    "温泉を2か所掘り当てるとクリアです。";
+
+  render();
+}
+
+function render() {
+  grid.innerHTML = "";
+
+  cells.forEach((cell, i) => {
+    const btn = document.createElement("button");
+    btn.className = "cell";
+
+    if (selected === i) btn.classList.add("selected");
+    if (cell.opened) btn.classList.add("opened");
+
+    btn.innerHTML = `
+      <div class="num">${i + 1}</div>
+      <div class="memo">${memos[cell.memoIndex]}</div>
+      <div>${cell.opened ? cell.icon + " " + cell.type : "？？？"}</div>
+      <div>${cell.knownHints.join(" / ")}</div>
+    `;
+
+    btn.onclick = () => {
+      if (gameOver) return;
+      selected = i;
+      render();
+    };
+
+    grid.appendChild(btn);
+  });
+
+  turnEl.textContent = turn;
+  noiseEl.textContent = noise;
+  onsenCountEl.textContent = foundOnsen;
+  barEl.style.width = noise + "%";
+
+  if (noise >= 75) alertEl.textContent = "捜索中";
+  else if (noise >= 50) alertEl.textContent = "警戒中";
+  else if (noise >= 25) alertEl.textContent = "巡回開始";
+  else alertEl.textContent = "平常";
+}
+
+function addNoise(n) {
+  noise += n;
+  if (noise < 0) noise = 0;
+  if (noise > 100) noise = 100;
+
+  if (noise >= 100) {
+    gameOver = true;
+    victory = false;
+
+    log.innerHTML =
+      "🚨 騒ぎゲージが最大になりました！<br>" +
+      "風紀委員に見つかってゲームオーバーです。";
+
+    // gameover_screen.pngを作ったら、ここを有効化
+     showResultScreen("images/gameover_screen.png");
+  }
+}
+
+function getNeighbors(index) {
+  const cols = 6;
+  const rows = 5;
+
+  const row = Math.floor(index / cols);
+  const col = index % cols;
+  const result = [];
+
+  const dirs = [
+    { name: "上", r: row - 1, c: col },
+    { name: "下", r: row + 1, c: col },
+    { name: "左", r: row, c: col - 1 },
+    { name: "右", r: row, c: col + 1 }
+  ];
+
+  dirs.forEach(d => {
+    if (d.r >= 0 && d.r < rows && d.c >= 0 && d.c < cols) {
+      result.push({
+        dir: d.name,
+        index: d.r * cols + d.c
+      });
+    }
+  });
+
+  return result;
+}
+
+function randomHint(cell) {
+  return cell.hints[Math.floor(Math.random() * cell.hints.length)];
+}
+
+
+function investigate() {
+  if (gameOver) return;
+
+  if (selected === null) {
+    log.innerHTML = "調査するマスを選んでください。";
+    return;
+  }
+
+  const targets = [selected, ...getNeighbors(selected).map(n => n.index)];
+  const targetIndex = targets[Math.floor(Math.random() * targets.length)];
+  const target = cells[targetIndex];
+  const hint = randomHint(target);
+
+  addNoise(3);
+
+  if (gameOver) {
+    render();
+    return;
+  }
+
+  turn++;
+
+  log.innerHTML = `
+    🔎 ${selected + 1}番周辺を調査しました。<br>
+    「${hint}」の気配があります。<br>
+    ※ ${selected + 1}番自身か、上下左右のどこかです。
+  `;
+
+  render();
+}
+
+function dig() {
+  if (gameOver) return;
+
+  if (selected === null) {
+    log.innerHTML = "掘るマスを選んでください。";
+    return;
+  }
+
+  const cell = cells[selected];
+  const layer = cell.layers[cell.depth];
+
+  let message = "";
+  let noiseAdd = 10;
+
+  if (layer === "温泉") {
+    cell.opened = true;
+    foundOnsen++;
+    hintHappyTimer = 8;
+
+    if (foundOnsen >= clearTarget) {
+      victory = true;
+      gameOver = true;
+
+      message =
+        `♨ ${selected + 1}番から温泉が湧き出しました！<br>` +
+        `2か所の温泉発掘に成功しました！`;
+
+      showResultScreen("images/clear_screen.png");
+    } else {
+      message =
+        `♨ ${selected + 1}番から温泉が湧き出しました！<br>` +
+        `あと1か所、温泉を探してください！`;
+    }
+  }
+
+  else if (layer === "岩盤") {
+    cell.depth++;
+    noiseAdd = 10;
+
+    message =
+      `🪨 ${selected + 1}番は硬い岩盤でした。<br>` +
+      `もう一度掘れば奥に進めそうです。`;
+  }
+
+  else if (layer === "爆発") {
+    cell.opened = true;
+    noiseAdd = 30;
+
+    message =
+      `💥 ${selected + 1}番は爆発岩でした！<br>` +
+      `大きな音が響きました。`;
+  }
+
+  else if (layer === "お邪魔") {
+    cell.opened = true;
+    noiseAdd = 22;
+
+    message =
+      `👤 ${selected + 1}番からお邪魔キャラが出現！<br>` +
+      `現場が騒がしくなりました。`;
+  }
+
+  else if (layer === "地下水") {
+    cell.opened = true;
+    noiseAdd = -8;
+
+    message =
+      `💧 ${selected + 1}番から地下水が出ました。<br>` +
+      `音がごまかされ、騒ぎゲージが下がりました。`;
+  }
+
+  else if (layer === "道具") {
+    cell.opened = true;
+    noiseAdd = -12;
+
+    message =
+      `🧰 ${selected + 1}番から道具箱を発見！<br>` +
+      `静音道具で騒ぎゲージが下がりました。`;
+  }
+
+  else if (layer === "空洞") {
+    cell.opened = true;
+    noiseAdd = 5;
+
+    message =
+      `⬜ ${selected + 1}番は空洞でした。<br>` +
+      `何もありません。`;
+  }
+
+  if (!gameOver) {
+    const neighbors = getNeighbors(selected);
+
+    if (neighbors.length > 0) {
+      const n = neighbors[Math.floor(Math.random() * neighbors.length)];
+      const hint = randomHint(cells[n.index]);
+
+      cells[n.index].knownHints.push(hint);
+     if (hint === "湯気" || hint === "湿気") {
+    hintHappyTimer = 6;
+}
+      message += `<br><br>さらに、${n.dir}から「${hint}」の気配がします。`;
+    }
+
+    addNoise(noiseAdd);
+  }
+
+  if (!gameOver) {
+    turn++;
+  }
+
+  log.innerHTML = message;
+  render();
+}
+
+function cycleMemo() {
+  if (gameOver) return;
+
+  if (selected === null) {
+    log.innerHTML = "メモを付けるマスを選んでください。";
+    return;
+  }
+
+  cells[selected].memoIndex++;
+
+  if (cells[selected].memoIndex >= memos.length) {
+    cells[selected].memoIndex = 0;
+  }
+
+  render();
+}
+
+setInterval(() => {
+  kasumiFrame = !kasumiFrame;
+
+  if (!gameScreen.classList.contains("active")) return;
+
+  if (victory) {
+    kasumiImg.src = kasumiFrame
+      ? "images/kasumi-yorokobi1.png"
+      : "images/kasumi-yorokobi2.png";
+    return;
+  }
+
+  if (hintHappyTimer > 0) {
+    kasumiImg.src = kasumiFrame
+      ? "images/kasumi-yorokobi1.png"
+      : "images/kasumi-yorokobi2.png";
+
+    hintHappyTimer--;
+    return;
+  }
+
+  if (noise >= 70) {
+    kasumiImg.src = kasumiFrame
+      ? "images/kasumi-aseri1.png"
+      : "images/kasumi-aseri2.png";
+  } else {
+    kasumiImg.src = kasumiFrame
+      ? "images/kasumi-tuujyou1.png"
+      : "images/kasumi-tuujyou2.png";
+  }
+}, 500);
+</script>
+</div>
+</body>
+</html>
