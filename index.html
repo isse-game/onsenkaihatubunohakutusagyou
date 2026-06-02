@@ -306,6 +306,32 @@ const clearTarget = 2;
 let kasumiFrame = false;
 let hintHappyTimer = 0;
 
+// =====================
+// 効果音
+// =====================
+
+const sounds = {
+  select: new Audio("audio/se_select.mp3"),
+  tool: new Audio("audio/se_tool.mp3"),
+  water: new Audio("audio/se_water.mp3"),
+  clear: new Audio("audio/se_clear.mp3"),
+  dig: new Audio("audio/se_dig.mp3"),
+  explosion: new Audio("audio/se_explosion.mp3"),
+  gameover: new Audio("audio/se_gameover.mp3"),
+  onsen: new Audio("audio/se_onsen.mp3"),
+  rock: new Audio("audio/se_rock.mp3"),
+  search: new Audio("audio/se_search.mp3")
+};
+
+function playSE(name) {
+  const se = sounds[name];
+
+  if (!se) return;
+
+  se.currentTime = 0;
+  se.play().catch(() => {});
+}
+
 const memos = ["", "◎", "△", "×", "？"];
 
 const types = [
@@ -420,7 +446,11 @@ function render() {
 
     btn.onclick = () => {
       if (gameOver) return;
+
       selected = i;
+
+      playSE("select");
+
       render();
     };
 
@@ -453,6 +483,7 @@ function addNoise(n) {
 
     // gameover_screen.pngを作ったら、ここを有効化
      showResultScreen("images/gameover_screen.png");
+     playSE("gameover");
   }
 }
 
@@ -489,6 +520,9 @@ function randomHint(cell) {
 
 
 function investigate() {
+
+  playSE("search");
+
   if (gameOver) return;
 
   if (selected === null) {
@@ -534,6 +568,7 @@ function dig() {
   let noiseAdd = 10;
 
   if (layer === "温泉") {
+    playSE("onsen");
     cell.opened = true;
     foundOnsen++;
     hintHappyTimer = 8;
@@ -547,6 +582,7 @@ function dig() {
         `2か所の温泉発掘に成功しました！`;
 
       showResultScreen("images/clear_screen.png");
+      playSE("clear");
     } else {
       message =
         `♨ ${selected + 1}番から温泉が湧き出しました！<br>` +
@@ -555,6 +591,7 @@ function dig() {
   }
 
   else if (layer === "岩盤") {
+    playSE("rock");
     cell.depth++;
     noiseAdd = 10;
 
@@ -564,6 +601,7 @@ function dig() {
   }
 
   else if (layer === "爆発") {
+    playSE("explosion");
     cell.opened = true;
     noiseAdd = 30;
 
@@ -573,6 +611,7 @@ function dig() {
   }
 
   else if (layer === "お邪魔") {
+    playSE("explosion");
     cell.opened = true;
     noiseAdd = 22;
 
@@ -582,6 +621,7 @@ function dig() {
   }
 
   else if (layer === "地下水") {
+    playSE("water");
     cell.opened = true;
     noiseAdd = -8;
 
@@ -591,6 +631,7 @@ function dig() {
   }
 
   else if (layer === "道具") {
+    playSE("tool");
     cell.opened = true;
     noiseAdd = -12;
 
@@ -600,6 +641,7 @@ function dig() {
   }
 
   else if (layer === "空洞") {
+    playSE("dig");
     cell.opened = true;
     noiseAdd = 5;
 
@@ -634,6 +676,7 @@ function dig() {
 }
 
 function cycleMemo() {
+  playSE("tool");
   if (gameOver) return;
 
   if (selected === null) {
