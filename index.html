@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>温泉開発部の発掘作業！ Ver1.5</title>
+<title>温泉開発部の発掘作業！ Ver1.6</title>
 
 <style>
 body {
@@ -60,14 +60,30 @@ h1 {
   margin: 10px 0;
 }
 
+/* =====================
+   背景＋キャラ重ね表示
+===================== */
+
 .character-area {
-  text-align: center;
-  margin-bottom: 10px;
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  margin: 0 auto 10px;
 }
 
-.character-area img {
-  width: 220px;
-  max-width: 100%;
+.character-bg {
+  width: 100%;
+  display: block;
+  border-radius: 12px;
+}
+
+.character-img {
+  position: absolute;
+  left: 50%;
+  bottom: 75px;   /* 上へ移動 */
+  transform: translateX(-50%);
+  width: 68%;     /* 小さくする */
+  pointer-events: none;
 }
 
 .status,
@@ -218,7 +234,7 @@ button {
 
   <div id="characterScreen" class="screen character-select">
     <h1>♨ 温泉開発部の発掘作業！</h1>
-    <img src="images/kasumi-tuujyou1.png">
+    <img src="images/kasumi_hand1.png">
     <p>
       かすみと一緒に温泉を2か所掘り当てよう！<br>
       調査でヒントを集めて、怪しいマスを掘削！<br>
@@ -231,7 +247,8 @@ button {
     <h1>♨ 温泉開発部の発掘作業！</h1>
 
     <div class="character-area">
-      <img id="kasumiImg" src="images/kasumi-tuujyou1.png">
+      <img class="character-bg" src="images/haikei.png">
+      <img id="kasumiImg" class="character-img" src="images/kasumi_hand1.png">
     </div>
 
     <div class="status">
@@ -252,23 +269,23 @@ button {
       <button class="memoBtn" onclick="cycleMemo()">メモ変更</button>
     </div>
 
-   <div class="log" id="log">
-  マスを選んで「調査」か「掘削」をしてください。
-</div>
+    <div class="log" id="log">
+      マスを選んで「調査」か「掘削」をしてください。
+    </div>
 
-<div class="hint-table">
-  <b>ヒント対応表</b>
-  <table>
-    <tr><th>種類</th><th>出るヒント</th></tr>
-    <tr><td>♨ 温泉</td><td>湯気 / 湿気</td></tr>
-    <tr><td>🪨 岩盤温泉</td><td>岩盤 / 湯気 / 湿気</td></tr>
-    <tr><td>💥 爆発岩</td><td>湯気 / 異臭 / 岩盤</td></tr>
-    <tr><td>👤 お邪魔キャラ</td><td>物音 / 異臭 / 湿気</td></tr>
-    <tr><td>💧 地下水</td><td>湿気 / 物音</td></tr>
-    <tr><td>🧰 道具箱</td><td>物音 / 岩盤</td></tr>
-    <tr><td>⬜ 空洞</td><td>静寂</td></tr>
-  </table>
-</div>
+    <div class="hint-table">
+      <b>ヒント対応表</b>
+      <table>
+        <tr><th>種類</th><th>出るヒント</th></tr>
+        <tr><td>♨ 温泉</td><td>湯気 / 湿気</td></tr>
+        <tr><td>🪨 岩盤温泉</td><td>岩盤 / 湯気 / 湿気</td></tr>
+        <tr><td>💥 爆発岩</td><td>湯気 / 異臭 / 岩盤</td></tr>
+        <tr><td>👤 お邪魔キャラ</td><td>物音 / 異臭 / 湿気</td></tr>
+        <tr><td>💧 地下水</td><td>湿気 / 物音</td></tr>
+        <tr><td>🧰 道具箱</td><td>物音 / 岩盤</td></tr>
+        <tr><td>⬜ 空洞</td><td>静寂</td></tr>
+      </table>
+    </div>
 
     <button class="reset" onclick="startGame()">最初から</button>
   </div>
@@ -303,8 +320,43 @@ let victory = false;
 let foundOnsen = 0;
 const clearTarget = 2;
 
-let kasumiFrame = false;
 let hintHappyTimer = 0;
+let frameIndex = 0;
+
+// =====================
+// キャラアニメーション画像
+// 1,2,3,4,3,2,1 の順番
+// =====================
+
+const normalFrames = [
+  "images/kasumi_hand1.png",
+  "images/kasumi_hand2.png",
+  "images/kasumi_hand3.png",
+  "images/kasumi_hand4.png",
+  "images/kasumi_hand3.png",
+  "images/kasumi_hand2.png",
+  "images/kasumi_hand1.png"
+];
+
+const aseriFrames = [
+  "images/kasumi_aseri_aligned_1.png",
+  "images/kasumi_aseri_aligned_2.png",
+  "images/kasumi_aseri_aligned_3.png",
+  "images/kasumi_aseri_aligned_4.png",
+  "images/kasumi_aseri_aligned_3.png",
+  "images/kasumi_aseri_aligned_2.png",
+  "images/kasumi_aseri_aligned_1.png"
+];
+
+const shockFrames = [
+  "images/kasumi_shock_1.png",
+  "images/kasumi_shock_2.png",
+  "images/kasumi_shock_3.png",
+  "images/kasumi_shock_4.png",
+  "images/kasumi_shock_3.png",
+  "images/kasumi_shock_2.png",
+  "images/kasumi_shock_1.png"
+];
 
 // =====================
 // 効果音
@@ -325,7 +377,6 @@ const sounds = {
 
 function playSE(name) {
   const se = sounds[name];
-
   if (!se) return;
 
   se.currentTime = 0;
@@ -419,6 +470,9 @@ function startGame() {
   victory = false;
   foundOnsen = 0;
   hintHappyTimer = 0;
+  frameIndex = 0;
+
+  kasumiImg.src = normalFrames[0];
 
   log.innerHTML =
     "マスを選んで「調査」か「掘削」をしてください。<br>" +
@@ -448,9 +502,7 @@ function render() {
       if (gameOver) return;
 
       selected = i;
-
       playSE("select");
-
       render();
     };
 
@@ -481,9 +533,8 @@ function addNoise(n) {
       "🚨 騒ぎゲージが最大になりました！<br>" +
       "風紀委員に見つかってゲームオーバーです。";
 
-    // gameover_screen.pngを作ったら、ここを有効化
-     showResultScreen("images/gameover_screen.png");
-     playSE("gameover");
+    showResultScreen("images/gameover_screen.png");
+    playSE("gameover");
   }
 }
 
@@ -518,9 +569,7 @@ function randomHint(cell) {
   return cell.hints[Math.floor(Math.random() * cell.hints.length)];
 }
 
-
 function investigate() {
-
   playSE("search");
 
   if (gameOver) return;
@@ -534,6 +583,11 @@ function investigate() {
   const targetIndex = targets[Math.floor(Math.random() * targets.length)];
   const target = cells[targetIndex];
   const hint = randomHint(target);
+
+  if (hint === "湯気" || hint === "湿気") {
+    hintHappyTimer = 8;
+    frameIndex = 0;
+  }
 
   addNoise(3);
 
@@ -572,6 +626,7 @@ function dig() {
     cell.opened = true;
     foundOnsen++;
     hintHappyTimer = 8;
+    frameIndex = 0;
 
     if (foundOnsen >= clearTarget) {
       victory = true;
@@ -658,9 +713,12 @@ function dig() {
       const hint = randomHint(cells[n.index]);
 
       cells[n.index].knownHints.push(hint);
-     if (hint === "湯気" || hint === "湿気") {
-    hintHappyTimer = 6;
-}
+
+      if (hint === "湯気" || hint === "湿気") {
+        hintHappyTimer = 8;
+        frameIndex = 0;
+      }
+
       message += `<br><br>さらに、${n.dir}から「${hint}」の気配がします。`;
     }
 
@@ -677,6 +735,7 @@ function dig() {
 
 function cycleMemo() {
   playSE("tool");
+
   if (gameOver) return;
 
   if (selected === null) {
@@ -693,35 +752,31 @@ function cycleMemo() {
   render();
 }
 
-setInterval(() => {
-  kasumiFrame = !kasumiFrame;
+// =====================
+// キャラ画像切り替え
+// 通常：kasumi_hand
+// 騒ぎ度70以上：kasumi_aseri_aligned
+// 温泉ヒント後：kasumi_shock
+// =====================
 
+setInterval(() => {
   if (!gameScreen.classList.contains("active")) return;
 
-  if (victory) {
-    kasumiImg.src = kasumiFrame
-      ? "images/kasumi-yorokobi1.png"
-      : "images/kasumi-yorokobi2.png";
-    return;
-  }
+  let frames = normalFrames;
 
   if (hintHappyTimer > 0) {
-    kasumiImg.src = kasumiFrame
-      ? "images/kasumi-yorokobi1.png"
-      : "images/kasumi-yorokobi2.png";
-
+    frames = shockFrames;
     hintHappyTimer--;
-    return;
+  } else if (noise >= 70) {
+    frames = aseriFrames;
   }
 
-  if (noise >= 70) {
-    kasumiImg.src = kasumiFrame
-      ? "images/kasumi-aseri1.png"
-      : "images/kasumi-aseri2.png";
-  } else {
-    kasumiImg.src = kasumiFrame
-      ? "images/kasumi-tuujyou1.png"
-      : "images/kasumi-tuujyou2.png";
+  kasumiImg.src = frames[frameIndex];
+
+  frameIndex++;
+
+  if (frameIndex >= frames.length) {
+    frameIndex = 0;
   }
 }, 500);
 </script>
